@@ -2,6 +2,9 @@ from dotenv import load_dotenv
 import os
 import requests
 import pandas as pd
+import torch 
+from datasets import load_dataset
+from sentence_transformers.util import semantic_search
 
 load_dotenv()
 
@@ -31,8 +34,23 @@ texts = ["How do I get a replacement Medicare card?",
         "What is TRICARE ?",
         "Should I sign up for Medicare Part B if I have Veterans' Benefits?"]
 
-output = query(texts)
-print(output)
+# output = query(texts)
+# # print(output)
+#
+# embeddings = pd.DataFrame(output)
+# print(embeddings)
 
-embeddings = pd.DataFrame(output)
-print(embeddings)
+# embeddings.to_csv("embeddings.csv", index=False)
+
+faqs_embeddings = load_dataset('sabinonweb/dataset')
+
+dataset_embeddings = torch.from_numpy(faqs_embeddings["train"].to_pandas().to_numpy()).to(torch.float)
+
+question = ["How can Medicare help me?"]
+output = query(question)
+query_embeddings = torch.FloatTensor(output)
+
+hits = semantic_search(query_embeddings, dataset_embeddings, top_k=5)
+
+print([texts[hits[0][i]['corpus_id']] for i in range(len(hits[0]))])
+
